@@ -1,6 +1,6 @@
 # Python Modules
-sudo apt-get install python3-dev
-sudo apt-get install python-dev
+sudo apt-get install python3-dev -y
+sudo apt-get install python-dev -y
 
 wget --no-check-certificate https://bootstrap.pypa.io/ez_setup.py
 python ez_setup.py --insecure
