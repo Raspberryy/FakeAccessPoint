@@ -110,7 +110,7 @@ def GettingAttributes():
 	os.system(AirmonCommand)
 	
 	# Starting other Defs
-	SetUpDhcpServer(APHostingInterface)
+	SetUpDhcpServer()
 	SetIpRules(Gateway, InternetInterface)
 	print yellow + "[*]"  + white + "Starting Ettercap"
 	StartEttercap()
