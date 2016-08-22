@@ -177,7 +177,7 @@ def StartAirbaseServer(UserAP):
 
 def StartEttercap():
 	print yellow + "[*]"  + white + "Starting to Listen on AP"
-	os.system(ettercap -p -u -T -q -i at0)
+	os.system("ettercap -p -u -T -q -i at0")
 
  
 def SetIpRules(Gateway, InterfaceInternet):
