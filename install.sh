@@ -1,3 +1,6 @@
+# Enter Folder
+cd Programs
+
 # Python Modules
 sudo apt-get install python3-dev -y
 sudo apt-get install python-dev -y
@@ -23,7 +26,6 @@ sudo apt-get update
 sudo apt-get install ettercap-text-only -y
 
 # AirCrack-Moduel
-cd AirCrack
 wget http://download.aircrack-ng.org/aircrack-ng-1.1.tar.gz
 tar xfvz aircrack-ng-1.1.tar.gz
 rm cd aircrack-ng-1.1.tar.gz
