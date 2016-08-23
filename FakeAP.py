@@ -148,7 +148,7 @@ def SetUpDhcpServer():
 	os.system("echo 'Subnet 192.168.1.0 netmask 255.255.255.0 {' >> /etc/dhcpd.conf ")
 	
 	# Set AP-Name
-	UserAP = raw_input(blue + "[=]" + white + " Enter desired AP-Name (e.g Free Wifi): " )
+	UserAP = raw_input(blue + "[=]" + white + " Enter desired AP-Name (e.g FreeWifi): " )
 	apnamewithquo = '"' + UserAP + '"' 
 	os.system("echo 'Option domain-name %s ;' >> /etc/dhcpd.conf " % apnamewithquo)
 	
