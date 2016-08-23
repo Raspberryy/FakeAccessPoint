@@ -170,7 +170,7 @@ def StartAirbaseServer(UserAP):
 	
 
 	# Set Air-Base String
-	CommandAirBase = "sudo airbase-ng -c " + Channel + " -e " + UserAP +  " mon0 > " + Path + "/AirBase.log 2>&1"
+	CommandAirBase = "sudo airbase-ng -c " + Channel + " -e " + UserAP +  " mon0 > " + Path + "/AirBase.log &"
 	 
 	#Execute
 	os.system(CommandAirBase) 
