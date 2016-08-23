@@ -205,5 +205,6 @@ def HelpFunction():
 # Main Program
 
 GettingAttributes()
+print yellow + "[*]" + white + "Stopping mon0"
 os.system(airmon-ng stop mon0)
 
