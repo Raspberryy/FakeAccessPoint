@@ -16,7 +16,7 @@ python setup.py install
 cd ..
 
 # DHCP3 Server
-sudo apt-get install dhcp3-server -y
+sudo apt-get install dhcp3-server -y --force-yes
 
 if [ "$1" != "--kali" ]
 then
