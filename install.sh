@@ -15,6 +15,10 @@ cd netifaces-0.10.4
 python setup.py install
 cd ..
 
+# Clean
+rm ez_setup.py
+rm setuptools-26.0.0.zip
+
 # DHCP3 Server
 sudo apt-get install dhcp3-server -y --force-yes
 
