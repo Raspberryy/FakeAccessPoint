@@ -18,20 +18,25 @@ cd ..
 # DHCP3 Server
 sudo apt-get install dhcp3-server -y
 
-# Ettercap
-sudo apt-get install zlib1g zlib1g-dev -y
-sudo apt-get install build-essential -y
-sudo apt-get install ettercap -y
-sudo apt-get update
-sudo apt-get install ettercap-text-only -y
+if [ "$1" != "--kali" ]
+then
 
-# AirCrack-Moduel
-wget http://download.aircrack-ng.org/aircrack-ng-1.1.tar.gz
-tar xfvz aircrack-ng-1.1.tar.gz
-rm cd aircrack-ng-1.1.tar.gz
-rm aircrack-ng-1.1/common.mak
-mv common.mak aircrack-ng-1.1/common.mak
-cd aircrack-ng-1.1
-make
-sudo make install
+  # Ettercap
+  sudo apt-get install zlib1g zlib1g-dev -y
+  sudo apt-get install build-essential -y
+  sudo apt-get install ettercap -y
+  sudo apt-get update
+  sudo apt-get install ettercap-text-only -y
+
+  # AirCrack-Moduel
+  wget http://download.aircrack-ng.org/aircrack-ng-1.1.tar.gz
+  tar xfvz aircrack-ng-1.1.tar.gz
+  rm cd aircrack-ng-1.1.tar.gz
+  rm aircrack-ng-1.1/common.mak
+  mv common.mak aircrack-ng-1.1/common.mak
+  cd aircrack-ng-1.1
+  make
+  sudo make install
+
+fi
 
