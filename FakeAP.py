@@ -193,7 +193,6 @@ def SetIpRules(Gateway, InterfaceInternet):
 	os.system("iptables -P FORWARD ACCEPT")
 	os.system("iptables --append FORWARD --in-interface at0 -j ACCEPT")
 	os.system("iptables --table nat --append POSTROUTING --out-interface %s -j MASQUERADE" % InterfaceInternet)
-	os.system("iptables -t nat -A PREROUTING -p tcp --destination-port -j REDIRECT --to-port 10000")
 	os.system("dhcpd -cf /etc/dhcpd.conf -pf /var/run/dhcpd.pid at0")
 	os.system("/etc/init.d/isc-dhcp-server start")
 	
