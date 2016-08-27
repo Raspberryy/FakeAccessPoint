@@ -114,6 +114,7 @@ def GettingAttributes():
 	SetIpRules(Gateway, InternetInterface)
 	print yellow + "[*]"  + white + "Starting Ettercap"
 	StartEttercap()
+	return APHostingInterface
 
 
 
@@ -204,9 +205,10 @@ def HelpFunction():
 
 # Main Program
 
-GettingAttributes()
+APHostingInterface = GettingAttributes()
 print yellow + "[*]" + white + "Stopping Ettercap"
 print yellow + "[*]" + white + "Stopping mon0"
 os.system("airmon-ng stop mon0")
+os.system("airmon-ng stop %s" %APHostingInterface)
 print red + "[!]" + white + "Make sure to close the Airbase Server"
 
