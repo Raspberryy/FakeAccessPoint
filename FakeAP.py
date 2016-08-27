@@ -209,6 +209,7 @@ APHostingInterface = GettingAttributes()
 print yellow + "[*]" + white + "Stopping Ettercap"
 print yellow + "[*]" + white + "Stopping mon0"
 os.system("airmon-ng stop mon0")
+print yellow + "[*]" + white + "Stopping " +  APHostingInterface
 os.system("airmon-ng stop %s" %APHostingInterface)
 print red + "[!]" + white + "Make sure to close the Airbase Server"
 
