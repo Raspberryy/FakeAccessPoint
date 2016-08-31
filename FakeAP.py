@@ -259,12 +259,12 @@ if len(sys.argv)==1:
 	
 if sys.argv[1]=="-h":
         PrintHelp()
-	BootBol = 1
+	NoStart = 1
 	
 	BootBol = 1
 elif sys.argv[1]=="--help":
         PrintHelp()
-	BootBol = 1
+	NoStart = 1
 
 
 elif sys.argv[1]=="-m":
@@ -283,16 +283,3 @@ if NoStart=!1:
 	print yellow + "[*]" + white + "Stopping " +  APHostingInterface
 	os.system("airmon-ng stop %s" %APHostingInterface)
 	print red + "[!]" + white + "Make sure to close the Airbase Server"
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
