@@ -20,7 +20,7 @@ rm ez_setup.py
 rm setuptools-26.0.0.zip
 
 # DHCP3 Server
-sudo apt-get install dhcp3-server -y --force-yes
+sudo apt-get install isc-dhcp-server -y --force-yes
 
 if [ "$1" != "--kali" ]
 then
