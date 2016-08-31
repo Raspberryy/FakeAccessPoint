@@ -214,6 +214,7 @@ def PrintHelp():
 	print "	Command List:"
 	print "	-m		Use manuel Values"
 	print "	-h --help	Prints this"	
+	print ""
 	
 	
 def ManuelAttack():
@@ -274,7 +275,7 @@ elif sys.argv[1]=="-m":
 
 
 # No Commands - Starting Normal FakeAccessPoint
-if NoStart=!1:
+if NoStart!=1:
 	APHostingInterface = GettingAttributes()
 	MonitorInterface = APHostingInterface + "mon"
 	print yellow + "[*]" + white + "Stopping Ettercap"
