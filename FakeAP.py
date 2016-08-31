@@ -280,7 +280,5 @@ if NoStart!=1:
 	MonitorInterface = APHostingInterface + "mon"
 	print yellow + "[*]" + white + "Stopping Ettercap"
 	print yellow + "[*]" + white + "Stopping " + MonitorInterface
-	os.system("airmon-ng stop mon0")
-	print yellow + "[*]" + white + "Stopping " +  APHostingInterface
-	os.system("airmon-ng stop %s" %APHostingInterface)
+	os.system("airmon-ng stop %s" %MonitorInterface)
 	print red + "[!]" + white + "Make sure to close the Airbase Server"
