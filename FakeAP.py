@@ -190,9 +190,9 @@ def SaveOldFile():
 
 def FinishExe():
 	
-	if FinishExecution = "reboot":
+	if FinishExecution == "reboot":
 		os.system("reboot")
-	if FinishExecution = "shutdown":
+	if FinishExecution == "shutdown":
 		os.system("shutdown now")
 	if FinishExecution == "stay":
 		print yellow + "[*]" + white + "NetCrow has finished Working - Close it manually"
